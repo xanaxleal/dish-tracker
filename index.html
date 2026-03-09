@@ -318,7 +318,15 @@ function getMealContext() {
   const h = d.getHours()+d.getMinutes()/60;
   if (h>=13&&h<16) return 'lunch';
   if (h>=20.5&&h<23) return 'dinner';
-  return 'fuera';
+  // Outside windows: return last active meal
+  if (h>=16) return 'dinner'; // after lunch, before or after dinner
+  return 'lunch'; // before 13:00, default to lunch
+}
+
+function isActiveWindow() {
+  const d = new Date();
+  const h = d.getHours()+d.getMinutes()/60;
+  return (h>=13&&h<16)||(h>=20.5&&h<23);
 }
 
 function getTodayDayIndex() {
@@ -366,14 +374,19 @@ async function loadAndBoot() {
 // ── Header ─────────────────────────────────────────
 function renderHeader() {
   const ctx = getMealContext();
+  const active = isActiveWindow();
   document.getElementById('hdr-semana').textContent=`Semana ${getDietWeekNumber()}`;
   document.getElementById('btn-switch-user').textContent=currentUser;
-  if (ctx==='fuera') { document.getElementById('header').style.display='none'; return; }
   document.getElementById('header').style.display='block';
   document.getElementById('hdr-meal').textContent=ctx==='lunch'?'☀️ Comida':'🌙 Cena';
   const s=document.getElementById('header-status');
-  s.textContent=ctx==='lunch'?'● Comida activa':'● Cena activa';
-  s.style.color='#4a7c59';
+  if (active) {
+    s.textContent=ctx==='lunch'?'● Comida activa':'● Cena activa';
+    s.style.color='#4a7c59';
+  } else {
+    s.textContent=ctx==='lunch'?'○ Próxima cena a las 20:30':'○ Próxima comida a las 13:00';
+    s.style.color='#bbb';
+  }
 }
 
 // ── Home ───────────────────────────────────────────
@@ -690,12 +703,6 @@ document.getElementById('btn-switch-user').onclick=showUserSelector;
 function boot() {
   const ctx=getMealContext();
   renderHeader();
-  if (ctx==='fuera') {
-    const now=new Date();
-    document.getElementById('fuera-hora').textContent=`Son las ${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}`;
-    showView('view-fuera');
-    return;
-  }
   activeMeal=ctx;
   renderHome();
 }
