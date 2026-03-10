@@ -312,6 +312,15 @@ function isActiveWindow() {
   return (h>=13&&h<16)||(h>=20.5&&h<23);
 }
 
+function getGreeting() {
+  const h = new Date().getHours()+new Date().getMinutes()/60;
+  if (h>=13&&h<16) return '☀️ Comida';
+  if (h>=20.5&&h<23) return '🌙 Cena';
+  if (h>=6&&h<13) return '🌅 Buenos días';
+  if (h>=16&&h<20.5) return '🌤 Buenas tardes';
+  return '🌙 Buenas noches'; // 23:00–6:00
+}
+
 function getTodayDayIndex() {
   const d = new Date().getDay();
   return d===0?6:d-1;
@@ -361,7 +370,7 @@ function renderHeader() {
   document.getElementById('hdr-semana').textContent=`Semana ${getDietWeekNumber()}`;
   document.getElementById('btn-switch-user').textContent=currentUser;
   document.getElementById('header').style.display='block';
-  document.getElementById('hdr-meal').textContent=ctx==='lunch'?'☀️ Comida':'🌙 Cena';
+  document.getElementById('hdr-meal').textContent=getGreeting();
   const s=document.getElementById('header-status');
   if (active) {
     s.textContent=ctx==='lunch'?'● Comida activa':'● Cena activa';
@@ -402,22 +411,29 @@ function renderHome() {
     const bg = totalRem>0?DISHES[d].bg:'#f5f5f5';
     const border = totalRem>0?`${DISHES[d].color}33`:'#eee';
 
+    const lunchTotal = LIMITS.lunch[d];
+    const dinnerTotal = LIMITS.dinner[d];
+
     const btn=document.createElement('button');
     btn.className='pill';
     btn.style.cssText=`background:${bg};border:1px solid ${border};`;
     btn.innerHTML=`
-      <div class="pill-title" style="color:${color};">Ideas plato ${d}</div>
       <div class="pill-row" style="color:${color};">
         <div class="pill-slot">
-          <div class="pill-slot-num">${lunchRem}</div>
+          <div class="pill-slot-num">
+            <span style="font-size:20px;font-weight:500;">${lunchRem}</span><span style="font-size:13px;opacity:0.5;">/${lunchTotal}</span>
+          </div>
           <div class="pill-slot-lbl">comida</div>
         </div>
         <div class="pill-divider" style="background:${color};"></div>
         <div class="pill-slot">
-          <div class="pill-slot-num">${dinnerRem}</div>
+          <div class="pill-slot-num">
+            <span style="font-size:20px;font-weight:500;">${dinnerRem}</span><span style="font-size:13px;opacity:0.5;">/${dinnerTotal}</span>
+          </div>
           <div class="pill-slot-lbl">cena</div>
         </div>
-      </div>`;
+      </div>
+      <div class="pill-title" style="color:${color};margin-top:6px;">Ideas plato ${d}</div>`;
     btn.onclick=()=>renderRecipes(d);
     pills.appendChild(btn);
   });
@@ -637,11 +653,11 @@ async function renderRecipes(dishNum) {
 
     // Meal tags
     const tags = [];
-    if (r.comida) tags.push(`<span style="font-family:system-ui;font-size:10px;background:#eef4f0;color:#4a7c59;border-radius:6px;padding:2px 7px;">☀️ comida</span>`);
-    if (r.cena)   tags.push(`<span style="font-family:system-ui;font-size:10px;background:#eef1f4;color:#4a617c;border-radius:6px;padding:2px 7px;">🌙 cena</span>`);
-    const tagsHtml = tags.length ? `<div style="display:flex;gap:4px;margin-top:5px;">${tags.join('')}</div>` : '';
+    if (r.comida) tags.push(`<span style="font-family:system-ui;font-size:10px;background:#eef4f0;color:#4a7c59 !important;border-radius:6px;padding:2px 7px;display:inline-block;">☀️ comida</span>`);
+    if (r.cena)   tags.push(`<span style="font-family:system-ui;font-size:10px;background:#eef1f4;color:#4a617c !important;border-radius:6px;padding:2px 7px;display:inline-block;">🌙 cena</span>`);
+    const tagsHtml = tags.length ? `<div style="display:flex;gap:4px;margin-top:5px;" onclick="event.stopPropagation()">${tags.join('')}</div>` : '';
 
-    btn.innerHTML=`<div><div>${r.titulo||r.title||''}</div>${tagsHtml}</div><span style="font-size:12px;opacity:0.5;flex-shrink:0;margin-left:8px;">▼</span>`;
+    btn.innerHTML=`<div><div style="color:inherit;">${r.titulo||r.title||''}</div>${tagsHtml}</div><span style="font-size:12px;opacity:0.5;flex-shrink:0;margin-left:8px;">▼</span>`;
 
     const body=document.createElement('div');
     body.className='recipe-body';
@@ -663,7 +679,7 @@ async function renderRecipes(dishNum) {
       btn.style.border=open?'1px solid #e0ddd8':'1px solid #2a2a2a';
       btn.style.borderRadius=open?'14px':'14px 14px 0 0';
       btn.querySelector('span:last-child').textContent=open?'▼':'▲';
-      if (!open) btn.querySelector('a') && (btn.querySelector('a').style.color='#7abf94');
+
     };
     wrap.appendChild(btn); wrap.appendChild(body); list.appendChild(wrap);
   });
